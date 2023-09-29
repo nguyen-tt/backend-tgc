@@ -1,0 +1,76 @@
+### GET ALL ADS
+GET http://localhost:5001/ads
+### GET ONE AD
+GET  http://localhost:5001/ads/1
+### CREATE ONE AD
+POST http://localhost:5001/ads
+Content-Type: application/json
+
+  {
+    "title": "Blue Car",
+    "description":
+      "My car is blue, working fine. I'm selling it because I've got a new one",
+    "owner": "car.seller@gmail.com",
+    "price": 100,
+    "picture":
+      "https://www.automobile-magazine.fr/asset/cms/34973/config/28294/apres-plusieurs-prototypes-la-bollore-bluecar-a-fini-par-devoiler-sa-version-definitive.jpg",
+    "location": "Paris",
+    "category": { "id": 1 },
+    "tags": [{ "id": 2 }]
+  }
+### UPDATE ONE AD
+PATCH  http://localhost:5001/ads/1
+Content-Type: application/json
+
+  {
+    "tags": [{ "id": 1 }]
+  }
+### DELETE ONE AD
+DELETE http://localhost:5001/ads/5
+###
+
+### GET ALL CATEGEGORIES
+GET http://localhost:5001/categories
+### GET ONE CATEGORY
+GET http://localhost:5001/categories/3
+### CREATE ONE CATEGORY
+POST http://localhost:5001/categories
+Content-Type: application/json
+
+  {
+    "name": "Vacances"  
+  }
+
+### UPDATE ONE CATEGORY
+PATCH http://localhost:5001/categories/1
+Content-Type: application/json
+
+  {
+    "name": "voiture",
+  }
+### DELETE ONE CATEGORY
+DELETE http://localhost:5001/categories/3
+###
+
+### GET ALL TAGS
+GET http://localhost:5001/tags
+
+### GET ONE TAG
+GET http://localhost:5001/tags/2
+### CREATE ONE TAG
+POST http://localhost:5001/tags
+Content-Type: application/json
+
+  {
+    "name": "blanc"      
+  }
+### UPDATE ONE TAG
+PATCH http://localhost:5001/tags/2
+Content-Type: application/json
+
+  {
+    "name": "bon état"
+  }
+### DELETE ONE TAG
+DELETE http://localhost:5001/tags/3
+###
