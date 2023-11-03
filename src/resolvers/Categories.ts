@@ -1,6 +1,10 @@
 import { Arg, ID, Mutation, Query, Resolver } from "type-graphql";
 import { validate } from "class-validator";
-import { Category } from "../entities/Category";
+import {
+  Category,
+  CategoryCreateInput,
+  CategoryUpdateInput,
+} from "../entities/Category";
 
 @Resolver(Category)
 export class CategoriesResolver {
@@ -21,9 +25,11 @@ export class CategoriesResolver {
   }
 
   @Mutation(() => Category)
-  async createCategory(@Arg("name") name: string): Promise<Category> {
+  async createCategory(
+    @Arg("data", () => CategoryCreateInput) data: CategoryCreateInput
+  ): Promise<Category> {
     const newCategory = new Category();
-    newCategory.name = name;
+    Object.assign(newCategory, data);
 
     const errors = await validate(newCategory);
     if (errors.length === 0) {
@@ -37,11 +43,14 @@ export class CategoriesResolver {
   @Mutation(() => Category)
   async updateCategory(
     @Arg("id", () => ID) id: number,
-    @Arg("name") name: string
+    @Arg("data", () => CategoryUpdateInput) data: CategoryUpdateInput
   ): Promise<Category> {
-    const category = await Category.findOne({ where: { id } });
+    const category = await Category.findOne({
+      where: { id },
+      relations: { ads: true },
+    });
     if (category) {
-      category.name = name;
+      Object.assign(category, data, { id: category.id });
       const errors = await validate(category);
       if (errors.length === 0) {
         await category.save();

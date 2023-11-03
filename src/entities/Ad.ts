@@ -61,7 +61,7 @@ export class Ad extends BaseEntity {
 }
 
 @InputType()
-export class AdInput {
+export class AdCreateInput {
   @Field()
   title!: string;
 
@@ -85,4 +85,46 @@ export class AdInput {
 
   @Field(() => [ObjectId])
   tags!: ObjectId[];
+}
+
+@InputType()
+export class AdUpdateInput {
+  @Field({ nullable: true })
+  title!: string;
+
+  @Field({ nullable: true })
+  description!: string;
+
+  @Field({ nullable: true })
+  owner!: string;
+
+  @Field({ nullable: true })
+  price!: number;
+
+  @Field({ nullable: true })
+  picture!: string;
+
+  @Field({ nullable: true })
+  location!: string;
+
+  @Field({ nullable: true })
+  category!: ObjectId;
+
+  @Field(() => [ObjectId], { nullable: true })
+  tags!: ObjectId[];
+}
+
+@InputType()
+export class AdsWhere {
+  @Field(() => [ID], { nullable: true })
+  categoryIn?: number[];
+
+  @Field({ nullable: true })
+  searchTitle?: string;
+
+  @Field({ nullable: true })
+  priceGte?: number;
+
+  @Field({ nullable: true })
+  priceLte?: number;
 }

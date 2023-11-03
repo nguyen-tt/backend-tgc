@@ -1,5 +1,5 @@
 import { Arg, ID, Mutation, Query, Resolver } from "type-graphql";
-import { Tag } from "../entities/Tag";
+import { Tag, TagCreateInput, TagUpdateInput } from "../entities/Tag";
 import { validate } from "class-validator";
 
 @Resolver(Tag)
@@ -19,9 +19,11 @@ export class TagsResolver {
   }
 
   @Mutation(() => Tag)
-  async createTag(@Arg("name") name: string): Promise<Tag> {
+  async createTag(
+    @Arg("data", () => TagCreateInput) data: TagCreateInput
+  ): Promise<Tag> {
     const newTag = new Tag();
-    newTag.name = name;
+    Object.assign(newTag, data);
 
     const errors = await validate(newTag);
     if (errors.length === 0) {
@@ -35,11 +37,11 @@ export class TagsResolver {
   @Mutation(() => Tag)
   async updateTag(
     @Arg("id", () => ID) id: number,
-    @Arg("name") name: string
+    @Arg("data", () => TagUpdateInput) data: TagUpdateInput
   ): Promise<Tag> {
-    const tag = await Tag.findOne({ where: { id } });
+    const tag = await Tag.findOne({ where: { id }, relations: { ads: true } });
     if (tag) {
-      tag.name = name;
+      Object.assign(tag, data, { id: tag.id });
       const errors = await validate(tag);
       if (errors.length === 0) {
         await tag.save();

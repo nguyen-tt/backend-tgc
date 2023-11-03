@@ -1,12 +1,35 @@
 import { Arg, ID, Mutation, Query, Resolver } from "type-graphql";
-import { Ad, AdInput } from "../entities/Ad";
+import { Ad, AdCreateInput, AdUpdateInput, AdsWhere } from "../entities/Ad";
 import { validate } from "class-validator";
+import { In, LessThanOrEqual, Like, MoreThanOrEqual } from "typeorm";
+import { merge } from "../utils";
 
 @Resolver(Ad)
 export class AdsResolver {
   @Query(() => [Ad])
-  async getAds(): Promise<Ad[]> {
+  async getAds(
+    @Arg("where", { nullable: true }) where?: AdsWhere
+  ): Promise<Ad[]> {
+    const querywhere: any = {};
+
+    if (where?.categoryIn) {
+      querywhere.category = { id: In(where.categoryIn) };
+    }
+
+    if (where?.searchTitle) {
+      querywhere.title = Like(`%${where.searchTitle}%`);
+    }
+
+    if (where?.priceGte) {
+      querywhere.priceGte = MoreThanOrEqual(Number(where.priceGte));
+    }
+
+    if (where?.priceLte) {
+      querywhere.priceLte = LessThanOrEqual(Number(where.priceLte));
+    }
+
     const ads = await Ad.find({
+      where: querywhere,
       relations: { tags: true, category: true },
     });
     return ads;
@@ -14,12 +37,17 @@ export class AdsResolver {
 
   @Query(() => Ad)
   async getAdById(@Arg("id", () => ID) id: number): Promise<Ad | null> {
-    const ad = await Ad.findOne({ where: { id } });
+    const ad = await Ad.findOne({
+      where: { id },
+      relations: { tags: true, category: true },
+    });
     return ad;
   }
 
   @Mutation(() => Ad)
-  async createAd(@Arg("data", () => AdInput) data: AdInput): Promise<Ad> {
+  async createAd(
+    @Arg("data", () => AdCreateInput) data: AdCreateInput
+  ): Promise<Ad> {
     const newAd = new Ad();
     Object.assign(newAd, data);
 
@@ -35,11 +63,15 @@ export class AdsResolver {
   @Mutation(() => Ad)
   async updateAd(
     @Arg("id", () => ID) id: number,
-    @Arg("data", () => AdInput) data: AdInput
+    @Arg("data", () => AdUpdateInput) data: AdUpdateInput
   ): Promise<Ad> {
-    const ad = await Ad.findOne({ where: { id } });
+    const ad = await Ad.findOne({
+      where: { id },
+      relations: { tags: true, category: true },
+    });
     if (ad) {
-      Object.assign(ad, data, { id: ad.id });
+      merge(ad, data);
+
       const errors = await validate(ad);
       if (errors.length === 0) {
         await ad.save();
