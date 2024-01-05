@@ -1,40 +1,57 @@
 import "reflect-metadata";
+import {dataSource} from "./config/datasource";
+import {TagsResolver} from "./resolvers/Tags";
+import {buildSchema} from "type-graphql";
+import {ApolloServer} from "@apollo/server";
+import {AdsResolver} from "./resolvers/Ads";
+import {CategoriesResolver} from "./resolvers/Categories";
+import {UsersResolver} from "./resolvers/Users";
+import {ContextType, customAuthChecker} from "./auth";
+import {ApolloServerPluginDrainHttpServer} from "@apollo/server/plugin/drainHttpServer";
 import express from "express";
+import {expressMiddleware} from "@apollo/server/express4";
+import http from "http";
 import cors from "cors";
-import { dataSource } from "./config/datasource";
-import { AdsController } from "./controllers/Ads";
-import { CategoriesController } from "./controllers/Categories";
-import { TagsController } from "./controllers/Tags";
 
-const app = express();
-
-app.use(cors());
-
-const port = 5001;
-app.use(express.json());
-
-const adsController = new AdsController();
-app.get("/ads", adsController.getAll);
-app.get("/ads/:id", adsController.getOne);
-app.post("/ads", adsController.createOne);
-app.patch("/ads/:id", adsController.updateOne);
-app.delete("/ads/:id", adsController.deleteOne);
-
-const categoriesController = new CategoriesController();
-app.get("/categories", categoriesController.getAll);
-app.get("/categories/:id", categoriesController.getOne);
-app.post("/categories", categoriesController.createOne);
-app.patch("/categories/:id", categoriesController.updateOne);
-app.delete("/categories/:id", categoriesController.deleteOne);
-
-const tagsController = new TagsController();
-app.get("/tags", tagsController.getAll);
-app.get("/tags/:id", tagsController.getOne);
-app.post("/tags", tagsController.createOne);
-app.patch("/tags/:id", tagsController.updateOne);
-app.delete("/tags/:id", tagsController.deleteOne);
-
-app.listen(port, async () => {
+async function initializeServer() {
   await dataSource.initialize();
-  console.log(`Server ready !`);
-});
+
+  const schema = await buildSchema({
+    resolvers: [TagsResolver, AdsResolver, CategoriesResolver, UsersResolver],
+    authChecker: customAuthChecker,
+  });
+
+  const app = express();
+  const httpServer = http.createServer(app);
+
+  const server = new ApolloServer<ContextType>({
+    schema,
+    plugins: [ApolloServerPluginDrainHttpServer({httpServer})],
+  });
+
+  await server.start();
+
+  app.use(
+    "/",
+    cors<cors.CorsRequest>({
+      origin: "http://localhost:3000",
+      credentials: true,
+    }),
+    express.json({limit: "50mb"}),
+    expressMiddleware(server, {
+      context: async (args) => {
+        return {
+          req: args.req,
+          res: args.res,
+        };
+      },
+    })
+  );
+
+  await new Promise<void>((resolve) =>
+    httpServer.listen({port: 5001}, resolve)
+  );
+  console.log(`🚀 Server ready at http://localhost:5001/`);
+}
+
+initializeServer();

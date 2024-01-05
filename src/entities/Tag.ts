@@ -1,14 +1,37 @@
-import { BaseEntity, Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  BaseEntity,
+  Column,
+  Entity,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Ad } from "./Ad";
+import { Field, ID, InputType, ObjectType } from "type-graphql";
 
 @Entity()
+@ObjectType()
 export class Tag extends BaseEntity {
-    @PrimaryGeneratedColumn()
-    id!: number;
+  @PrimaryGeneratedColumn()
+  @Field(() => ID)
+  id!: number;
 
-    @Column({ length: 100 })
-    name!: string;
+  @Column({ length: 100 })
+  @Field()
+  name!: string;
 
-    @ManyToMany(() => Ad, ad => ad.tags)
-    ads!: Ad[];
+  @ManyToMany(() => Ad, (ad) => ad.tags)
+  @Field(() => [Ad])
+  ads!: Ad[];
+}
+
+@InputType()
+export class TagCreateInput {
+  @Field()
+  name!: string;
+}
+
+@InputType()
+export class TagUpdateInput {
+  @Field({ nullable: true })
+  name!: string;
 }
