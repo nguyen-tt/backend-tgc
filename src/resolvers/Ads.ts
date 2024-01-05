@@ -1,21 +1,31 @@
-import { Arg, ID, Int, Mutation, Query, Resolver } from "type-graphql";
-import { Ad, AdCreateInput, AdUpdateInput, AdsWhere } from "../entities/Ad";
-import { validate } from "class-validator";
-import { In, LessThanOrEqual, Like, MoreThanOrEqual } from "typeorm";
-import { merge } from "../utils";
+import {
+  Arg,
+  Authorized,
+  Ctx,
+  ID,
+  Int,
+  Mutation,
+  Query,
+  Resolver,
+} from "type-graphql";
+import {Ad, AdCreateInput, AdUpdateInput, AdsWhere} from "../entities/Ad";
+import {validate} from "class-validator";
+import {In, LessThanOrEqual, Like, MoreThanOrEqual} from "typeorm";
+import {merge} from "../utils";
+import {ContextType} from "../auth";
 
 @Resolver(Ad)
 export class AdsResolver {
   @Query(() => [Ad])
   async getAds(
-    @Arg("where", { nullable: true }) where?: AdsWhere,
-    @Arg("take", () => Int, { nullable: true }) take?: number,
-    @Arg("skip", () => Int, { nullable: true }) skip?: number
+    @Arg("where", {nullable: true}) where?: AdsWhere,
+    @Arg("take", () => Int, {nullable: true}) take?: number,
+    @Arg("skip", () => Int, {nullable: true}) skip?: number
   ): Promise<Ad[]> {
     const querywhere: any = {};
 
     if (where?.categoryIn) {
-      querywhere.category = { id: In(where.categoryIn) };
+      querywhere.category = {id: In(where.categoryIn)};
     }
 
     if (where?.searchTitle) {
@@ -34,19 +44,19 @@ export class AdsResolver {
       take: take ?? 20,
       skip,
       where: querywhere,
-      relations: { tags: true, category: true },
+      relations: {tags: true, category: true, createdBy: true},
     });
     return ads;
   }
 
   @Query(() => Int)
   async allAdsCount(
-    @Arg("where", { nullable: true }) where?: AdsWhere
+    @Arg("where", {nullable: true}) where?: AdsWhere
   ): Promise<number> {
     const queryWhere: any = {};
 
     if (where?.categoryIn) {
-      queryWhere.category = { id: In(where.categoryIn) };
+      queryWhere.category = {id: In(where.categoryIn)};
     }
 
     if (where?.searchTitle) {
@@ -68,20 +78,23 @@ export class AdsResolver {
   }
 
   @Query(() => Ad)
+  @Authorized()
   async getAdById(@Arg("id", () => ID) id: number): Promise<Ad | null> {
     const ad = await Ad.findOne({
-      where: { id },
-      relations: { tags: true, category: true },
+      where: {id},
+      relations: {tags: true, category: true, createdBy: true},
     });
     return ad;
   }
 
   @Mutation(() => Ad)
+  @Authorized()
   async createAd(
+    @Ctx() context: ContextType,
     @Arg("data", () => AdCreateInput) data: AdCreateInput
   ): Promise<Ad> {
     const newAd = new Ad();
-    Object.assign(newAd, data);
+    Object.assign(newAd, data, {createdBy: context.user});
 
     const errors = await validate(newAd);
     if (errors.length === 0) {
@@ -93,15 +106,17 @@ export class AdsResolver {
   }
 
   @Mutation(() => Ad)
+  @Authorized()
   async updateAd(
+    @Ctx() context: ContextType,
     @Arg("id", () => ID) id: number,
     @Arg("data", () => AdUpdateInput) data: AdUpdateInput
   ): Promise<Ad> {
     const ad = await Ad.findOne({
-      where: { id },
-      relations: { tags: true, category: true },
+      where: {id},
+      relations: {tags: true, category: true, createdBy: true},
     });
-    if (ad) {
+    if (ad && ad.createdBy.id === context.user?.id) {
       merge(ad, data);
 
       const errors = await validate(ad);
@@ -116,9 +131,10 @@ export class AdsResolver {
     }
   }
 
+  @Authorized()
   @Mutation(() => Ad)
   async deleteAd(@Arg("id", () => ID) id: number): Promise<any> {
-    const ad = await Ad.findOne({ where: { id } });
+    const ad = await Ad.findOne({where: {id}});
     if (ad) {
       const deletedAd = Object.assign({}, ad);
       await ad.remove();

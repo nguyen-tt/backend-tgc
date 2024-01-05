@@ -1,4 +1,4 @@
-import { Length } from "class-validator";
+import {Length} from "class-validator";
 import {
   BaseEntity,
   Column,
@@ -9,10 +9,11 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Category } from "./Category";
-import { Tag } from "./Tag";
-import { Field, ID, InputType, ObjectType } from "type-graphql";
-import { ObjectId } from "./ObjectId";
+import {Category} from "./Category";
+import {Tag} from "./Tag";
+import {Field, ID, InputType, ObjectType} from "type-graphql";
+import {ObjectId} from "./ObjectId";
+import {User} from "./User";
 
 @Entity()
 @ObjectType()
@@ -21,7 +22,7 @@ export class Ad extends BaseEntity {
   @Field(() => ID)
   id!: number;
 
-  @Column({ length: 100 })
+  @Column({length: 100})
   @Field()
   title!: string;
 
@@ -29,8 +30,8 @@ export class Ad extends BaseEntity {
   @Field()
   description!: string;
 
-  @Column({ length: 100 })
-  @Length(1, 100, { message: "Entre 1 et 100 caractères" })
+  @Column({length: 100})
+  @Length(1, 100, {message: "Entre 1 et 100 caractères"})
   @Field()
   owner!: string;
 
@@ -42,22 +43,26 @@ export class Ad extends BaseEntity {
   @Field()
   createdAt!: Date;
 
-  @Column({ length: 100 })
+  @Column({length: 100})
   @Field()
   picture!: string;
 
-  @Column({ length: 100 })
+  @Column({length: 100})
   @Field()
   location!: string;
 
   @ManyToOne(() => Category, (category) => category.ads)
-  @Field(() => Category, { nullable: true })
+  @Field(() => Category, {nullable: true})
   category!: Category;
 
   @ManyToMany(() => Tag, (tag) => tag.ads)
   @JoinTable()
   @Field(() => [Tag])
   tags!: Tag[];
+
+  @ManyToOne(() => User, (user) => user.ads)
+  @Field(() => User)
+  createdBy!: User;
 }
 
 @InputType()
@@ -89,42 +94,42 @@ export class AdCreateInput {
 
 @InputType()
 export class AdUpdateInput {
-  @Field({ nullable: true })
+  @Field({nullable: true})
   title!: string;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   description!: string;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   owner!: string;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   price!: number;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   picture!: string;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   location!: string;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   category!: ObjectId;
 
-  @Field(() => [ObjectId], { nullable: true })
+  @Field(() => [ObjectId], {nullable: true})
   tags!: ObjectId[];
 }
 
 @InputType()
 export class AdsWhere {
-  @Field(() => [ID], { nullable: true })
+  @Field(() => [ID], {nullable: true})
   categoryIn?: number[];
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   searchTitle?: string;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   priceGte?: number;
 
-  @Field({ nullable: true })
+  @Field({nullable: true})
   priceLte?: number;
 }
